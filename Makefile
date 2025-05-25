@@ -12,6 +12,6 @@ minips: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS)
 
 clean:
-	rm -f *.o minips
+	rm -f $(OBJS) minips
 
 .PHONY: all clean
