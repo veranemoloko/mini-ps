@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static void get_username(uid_t uid, char *buf, size_t buflen) {
+static void getUsername(uid_t uid, char *buf, size_t buflen) {
   struct passwd *pw = getpwuid(uid);
   if (pw) {
     if (buflen > 0) {
@@ -21,8 +21,8 @@ static void get_username(uid_t uid, char *buf, size_t buflen) {
   }
 }
 
-int parse_stat(pid_t pid, unsigned long *utime, unsigned long *stime,
-               long *rss_pages, char *comm, size_t comm_len) {
+int parseStat(pid_t pid, unsigned long *utime, unsigned long *stime,
+              long *rss_pages, char *comm, size_t comm_len) {
   char path[64], buf[1024];
   FILE *fp;
   snprintf(path, sizeof(path), PROC_DIR "/%d/stat", pid);
@@ -79,7 +79,7 @@ int parse_stat(pid_t pid, unsigned long *utime, unsigned long *stime,
   return 0;
 }
 
-int get_uid(pid_t pid, uid_t *uid) {
+int getUid(pid_t pid, uid_t *uid) {
   char path[64], line[256];
   FILE *fp;
   snprintf(path, sizeof(path), PROC_DIR "/%d/status", pid);
@@ -102,7 +102,7 @@ int get_uid(pid_t pid, uid_t *uid) {
   return -1;
 }
 
-unsigned long get_page_size_kb() {
+unsigned long getPageSizeKb() {
   static unsigned long page_kb = 0;
   if (page_kb == 0) {
     page_kb = sysconf(_SC_PAGESIZE) / 1024;
@@ -112,17 +112,17 @@ unsigned long get_page_size_kb() {
   return page_kb;
 }
 
-int get_ps_info(pid_t pid, PsInfo *info) {
+int getPsInfo(pid_t pid, PsInfo *info) {
   info->pid = pid;
 
-  if (get_uid(pid, &info->uid) != 0)
+  if (getUid(pid, &info->uid) != 0)
     return -1;
-  get_username(info->uid, info->user, sizeof(info->user));
+  getUsername(info->uid, info->user, sizeof(info->user));
 
   unsigned long utime = 0, stime = 0;
   long rss_pages = 0;
   char comm[256] = {0};
-  if (parse_stat(pid, &utime, &stime, &rss_pages, comm, sizeof(comm)) != 0)
+  if (parseStat(pid, &utime, &stime, &rss_pages, comm, sizeof(comm)) != 0)
     return -1;
 
   info->utimeTicks = utime;
@@ -130,7 +130,7 @@ int get_ps_info(pid_t pid, PsInfo *info) {
   strncpy(info->name, comm, sizeof(info->name));
   info->name[sizeof(info->name) - 1] = '\0';
 
-  unsigned long page_kb = get_page_size_kb();
+  unsigned long page_kb = getPageSizeKb();
   if (rss_pages > 0)
     info->rss_kb = rss_pages * page_kb;
   else

@@ -15,6 +15,6 @@ typedef struct PsInfo {
   unsigned long rss_kb;
 } PsInfo;
 
-int get_ps_info(pid_t pid, PsInfo *info);
+int getPsInfo(pid_t pid, PsInfo *info);
 
 #endif
