@@ -12,9 +12,10 @@ typedef struct PsInfo {
   char name[256];
   unsigned long utimeTicks;
   unsigned long stimeTicks;
-  unsigned long rss_kb;
+  unsigned long rssKb;
 } PsInfo;
 
 int getPsInfo(pid_t pid, PsInfo *info);
+int isNumericLine(const char *str);
 
 #endif

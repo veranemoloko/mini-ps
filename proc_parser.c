@@ -9,7 +9,17 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static void getUsername(uid_t uid, char *buf, size_t buflen) {
+int isNumericLine(const char *str) {
+  if (!str || !*str)
+    return 0;
+  for (; *str; str++) {
+    if (!isdigit(*str))
+      return 0;
+  }
+  return 1;
+}
+
+void getUsername(uid_t uid, char *buf, size_t buflen) {
   struct passwd *pw = getpwuid(uid);
   if (pw) {
     if (buflen > 0) {
@@ -22,7 +32,7 @@ static void getUsername(uid_t uid, char *buf, size_t buflen) {
 }
 
 int parseStat(pid_t pid, unsigned long *utime, unsigned long *stime,
-              long *rss_pages, char *comm, size_t comm_len) {
+              long *rssPages, char *comm, size_t comm_len) {
   char path[64], buf[1024];
   FILE *fp;
   snprintf(path, sizeof(path), PROC_DIR "/%d/stat", pid);
@@ -75,7 +85,7 @@ int parseStat(pid_t pid, unsigned long *utime, unsigned long *stime,
 
   *utime = ut;
   *stime = st;
-  *rss_pages = rss;
+  *rssPages = rss;
   return 0;
 }
 
@@ -86,7 +96,6 @@ int getUid(pid_t pid, uid_t *uid) {
   fp = fopen(path, "r");
   if (!fp)
     return -1;
-
   while (fgets(line, sizeof(line), fp)) {
     if (strncmp(line, "Uid:", 4) == 0) {
       unsigned int ruid;
@@ -97,32 +106,29 @@ int getUid(pid_t pid, uid_t *uid) {
       }
     }
   }
-
   fclose(fp);
   return -1;
 }
 
 unsigned long getPageSizeKb() {
-  static unsigned long page_kb = 0;
-  if (page_kb == 0) {
-    page_kb = sysconf(_SC_PAGESIZE) / 1024;
-    if (page_kb == 0)
-      page_kb = 4;
+  static unsigned long pageKb = 0;
+  if (pageKb == 0) {
+    pageKb = sysconf(_SC_PAGESIZE) / 1024;
+    if (pageKb == 0)
+      pageKb = 4;
   }
-  return page_kb;
+  return pageKb;
 }
 
 int getPsInfo(pid_t pid, PsInfo *info) {
   info->pid = pid;
-
   if (getUid(pid, &info->uid) != 0)
     return -1;
   getUsername(info->uid, info->user, sizeof(info->user));
-
   unsigned long utime = 0, stime = 0;
-  long rss_pages = 0;
+  long rssPages = 0;
   char comm[256] = {0};
-  if (parseStat(pid, &utime, &stime, &rss_pages, comm, sizeof(comm)) != 0)
+  if (parseStat(pid, &utime, &stime, &rssPages, comm, sizeof(comm)) != 0)
     return -1;
 
   info->utimeTicks = utime;
@@ -130,11 +136,10 @@ int getPsInfo(pid_t pid, PsInfo *info) {
   strncpy(info->name, comm, sizeof(info->name));
   info->name[sizeof(info->name) - 1] = '\0';
 
-  unsigned long page_kb = getPageSizeKb();
-  if (rss_pages > 0)
-    info->rss_kb = rss_pages * page_kb;
+  unsigned long pageKb = getPageSizeKb();
+  if (rssPages > 0)
+    info->rssKb = rssPages * pageKb;
   else
-    info->rss_kb = 0;
-
+    info->rssKb = 0;
   return 0;
 }

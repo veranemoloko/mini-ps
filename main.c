@@ -5,39 +5,34 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int isNumeric(const char *str) {
-  if (!str || !*str)
-    return 0;
-  for (; *str; str++) {
-    if (!isdigit(*str))
-      return 0;
-  }
-  return 1;
-}
-
 int main() {
 
   DIR *dir = opendir("/proc");
   if (!dir) {
-    perror("proc");
+    perror("open /proc");
     return 1;
   }
 
-  struct dirent *dirItem;
-  printf("%-6s %-8s %-20s %-10s %-10s\n", "PID", "USER", "NAME", "CPU(s)",
-         "MEM(KB)");
-
+  puts("PID    USER     NAME                    CPU(s)     MEM(KB)");
+  struct dirent *dirItem; // Structure containing directory entry information
   while ((dirItem = readdir(dir)) != NULL) {
-    if (!isNumeric(dirItem->d_name))
+    if (!isNumericLine(dirItem->d_name)) // Skip if name is not a PID
       continue;
 
-    pid_t pid = atoi(dirItem->d_name);
     PsInfo inf;
+    pid_t pid = atoi(dirItem->d_name);
     if (getPsInfo(pid, &inf) == 0) {
-      long ticksSec = sysconf(_SC_CLK_TCK);
-      double cpu_sec = (inf.utimeTicks + inf.stimeTicks) / (double)ticksSec;
-      printf("%-6d %-8s %-20s %10.2f %10lu\n", inf.pid, inf.user, inf.name,
-             cpu_sec, inf.rss_kb);
+
+      long ticksSec = sysconf(_SC_CLK_TCK); // Get system clock ticks per secon
+      double cpu_sec = (inf.utimeTicks + inf.stimeTicks) /
+                       (double)ticksSec; // Calculate total CPU time in seconds
+
+      printf("%-6d %-8s %-20s %10.2f %10lu\n",
+             inf.pid,    // Process ID
+             inf.user,   // Username
+             inf.name,   // Process name
+             cpu_sec,    // CPU time
+             inf.rssKb); // Memory usage in KB
     }
   }
   closedir(dir);
