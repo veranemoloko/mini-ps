@@ -12,7 +12,7 @@ minips: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS)
 
 minips_sanitize: $(OBJS)
-	$(CC) $(CFLAGS) -fsanitize=address,undefined -g -O1 -o $@ $(OBJS)
+	$(CC) $(CFLAGS) -fsanitize=address,undefined -o $@ $(OBJS)
 
 clean:
 	rm -f $(OBJS) minips minips_sanitize
